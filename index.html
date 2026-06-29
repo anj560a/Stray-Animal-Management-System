@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Stray Animal Management System</title>
+<style>
+:root{ --primary:#000; --panel:#ffffff; --text:#000; --muted:#ffecec; --hover:#b30000; }
+
+/* Page */
+body { font-family:'Segoe UI',sans-serif; background:var(--panel); margin:0; padding:0; color:var(--text); }
+header { background:var(--primary); color:#fff; text-align:center; padding:20px; font-size:1.8em; }
+
+/* Inspiring caption under header */
+header::after {
+  content:"Saving one animal won't change the world, but for that one animal, the world will change forever.";
+  display:block;
+  font-size:0.9em;
+  margin-top:8px;
+  color:#fff;
+}
+
+/* Section backgrounds keep white panels */
+#login, #signup, #forget, #home, #view, #report, #adopt, #notifications, #contact,
+#dashboard, #manageAnimals, #manageReports, #requests {
+  background:var(--panel);
+}
+
+/* Nav - black primary */
+nav { background:var(--primary); padding:10px; text-align:center; display:flex; justify-content:center; flex-wrap:wrap; gap:8px; align-items:center; }
+nav a, nav button {
+  color:#fff; text-decoration:none; margin:0 8px; font-weight:bold; cursor:pointer; background:none; border:none; font-size:1em; padding:6px 10px; border-radius:6px;
+}
+/* Hover color changed to red */
+nav a:hover, nav button:hover { background:var(--hover); color:#fff; }
+
+/* Badge */
+.badge { display:inline-block; min-width:20px; padding:2px 6px; margin-left:6px; background:#000; color:#fff; font-weight:700; border-radius:12px; font-size:0.8em; }
+
+/* Layout */
+section { display:none; padding:25px; animation:fade 0.4s; min-height:75vh; }
+@keyframes fade { from {opacity:0;} to{opacity:1;} }
+h2 { color:var(--primary); text-align:center; }
+
+/* Forms */
+form { background:#fff; border-radius:10px; padding:20px; max-width:600px; margin:20px auto; box-shadow:0 0 10px rgba(0,0,0,0.06); }
+input, select, textarea, button { width:100%; margin:8px 0; padding:10px; border-radius:6px; border:1px solid #ddd; font-size:1em; background:#fff; color:var(--text); }
+button { background:var(--primary); color:#fff; cursor:pointer; }
+button:hover { background:var(--hover); color:#fff; }
+
+/* small button style (white with black text) */
+.small-btn { display:inline-block; padding:6px 10px; border-radius:6px; border:1px solid #ddd; cursor:pointer; background:#fff; color:#000; font-weight:700; margin:2px; }
+.small-btn:hover { background:var(--hover); color:#fff; }
+
+/* Tables / notices */
+table { width:100%; border-collapse:collapse; background:#fff; margin-top:10px; border-radius:10px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,0.03); }
+th, td { border-bottom:1px solid #eee; padding:10px; text-align:center; color:var(--text); }
+tr:hover { background:var(--muted); }
+
+.notice { background:#fff; color:var(--text); padding:10px; border-radius:8px; margin:10px auto; max-width:700px; border:1px solid #e6e6e6; }
+
+/* Clear button */
+.clear-btn { display:block; margin:10px auto; background:var(--primary); color:#fff; border:none; padding:10px 15px; border-radius:6px; cursor:pointer; }
+.clear-btn:hover { background:var(--hover); }
+
+/* Footer */
+.footer { text-align:center; background:var(--primary); color:#fff; padding:15px; margin-top:40px; }
+.footer::after { content:" Together we can give them a better life"; display:block; font-size:0.85em; color:#fff; margin-top:6px; }
+
+/* Responsive tweaks */
+@media (max-width:760px) {
+  nav { flex-direction:column; gap:6px; padding:12px; }
+  form { padding:14px; margin:12px; }
+}
+.container { max-width:1100px; margin:0 auto; }
+</style>
+</head>
+<body>
+
+<header>Stray Animal Management System</header>
+
+<nav id="mainNav" style="display:none;">
+  <a onclick="showSection('home')">Home</a>
+  <a onclick="showSection('view')">View Animals</a>
+  <a id="dashboardNav" onclick="showSection('dashboard')" style="display:none;">Dashboard</a>
+  <a id="adoptNav" onclick="showSection('adopt')" style="display:none;">Adopt</a>
+  <a id="reportNav" onclick="showSection('report')" style="display:none;">Report</a>
+  <a id="requestsNav" onclick="showSection('requests')" style="display:none;">Requests <span id="reqCount" class="badge" style="display:none">0</span></a>
+  <a id="contactNav" onclick="showSection('contact')" style="display:none;">Contact</a>
+  <button onclick="logout()">Logout</button>
+</nav>
+
+<!-- LOGIN -->
+<section id="login" style="display:block;">
+  <div class="container">
+  <h2>Login</h2>
+  <p style="text-align:center; color:#000;">Be the voice for the voiceless</p>
+  <form id="loginForm" onsubmit="login(event)">
+    <input type="text" placeholder="Username" id="loginUsername" required>
+    <input type="password" placeholder="Password" id="loginPassword" required>
+    <select id="loginRole" onchange="updateLoginField()">
+      <option value="volunteer">Volunteer</option>
+      <option value="admin">Admin</option>
+    </select>
+    <button type="submit">Login</button>
+    <p style="text-align:center;">New here? <a onclick="showSection('signup')">Create an account</a> | <a onclick="showSection('forget')">Forget Password</a></p>
+  </form>
+  </div>
+</section>
+
+<!-- SIGNUP -->
+<section id="signup">
+  <div class="container">
+  <h2>Create Account</h2>
+  <p style="text-align:center; color:#000;">Join us and save lives</p>
+  <form id="signupForm" onsubmit="signup(event)">
+    <input type="text" placeholder="Full Name" id="signupName" required>
+    <input type="text" placeholder="Username" id="signupUsername" required>
+    <input type="password" placeholder="Password" id="signupPassword" required>
+    <select id="signupRole" onchange="updateSignupField()">
+      <option value="volunteer">Volunteer</option>
+      <option value="admin">Admin</option>
+    </select>
+    <button type="submit">Sign Up</button>
+    <p style="text-align:center;"><a onclick="showSection('login')">Back to Login</a></p>
+  </form>
+  </div>
+</section>
+
+<!-- FORGOT PASSWORD -->
+<section id="forget" style="display:none;">
+  <div class="container">
+  <h2>Reset Password</h2>
+  <p style="text-align:center; color:#000;">Enter your account details to reset password</p>
+  <form id="forgetForm" onsubmit="forgetPassword(event)">
+    <input type="text" placeholder="Username or Admin ID" id="forgetUsername" required>
+    <select id="forgetRole" onchange="updateForgetPlaceholder()">
+      <option value="volunteer">Volunteer</option>
+      <option value="admin">Admin</option>
+    </select>
+    <input type="password" placeholder="New Password" id="forgetNewPassword" required>
+    <button type="submit">Reset Password</button>
+    <p style="text-align:center;"><a onclick="showSection('login')">Back to Login</a></p>
+  </form>
+  </div>
+</section>
+
+<!-- HOME -->
+<section id="home" style="display:none;">
+  <style>
+    .inspire-box {
+      max-width: 900px;
+      margin: 30px auto;
+      padding: 25px;
+      background: linear-gradient(135deg, #f5f9ff 70%, #ffecec 100%);
+      border-radius: 18px;
+      font-family: 'Segoe UI', sans-serif;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.13);
+      line-height: 1.8em;
+      font-size: 1.08em;
+      color: #222;
+      position: relative;
+      overflow: hidden;
+    }
+    .inspire-box h2 {
+      text-align: center;
+      color: #b30000;
+      font-size: 2.2em;
+      margin-bottom: 12px;
+      letter-spacing: 1px;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .inspire-box h3 {
+      margin-top: 28px;
+      text-align: center;
+      color: #1565c0;
+      font-weight: 600;
+      font-size: 1.2em;
+    }
+    .quote-line {
+      display: block;
+      margin: 12px 0;
+      padding: 12px 18px;
+      background: #e3f2fd;
+      border-left: 6px solid #1976d2;
+      border-radius: 8px;
+      color: #0d47a1;
+      font-size: 1.05em;
+      font-style: italic;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .highlight {
+      color: #1b5e20;
+      font-weight: 700;
+      font-size: 1.12em;
+      display: block;
+      text-align: center;
+      margin-top: 18px;
+      background: #e8f5e9;
+      border-radius: 8px;
+      padding: 10px 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    .inspire-icons {
+      text-align: center;
+      margin: 18px 0 8px 0;
+    }
+    .inspire-icons span {
+      font-size: 2em;
+      margin: 0 10px;
+      filter: drop-shadow(0 2px 2px #ccc);
+    }
+  </style>
+
+  <div class="container">
+    <div class="inspire-box">
+      <h2>Welcome</h2>
+
+      Kindness is the greatest gift you can give to a life in need.<br>
+      Every rescued animal is a story of hope, courage, and compassion.<br>
+      When you help a stray, you light a spark that can ignite a thousand hearts.<br>
+      Small actions, big impact—your care can change their world.<br>
+      <br>
+      <h3>Let these words inspire you</h3>
+
+      <span class="quote-line">"Compassion for animals is intimately connected with goodness of character."</span>
+      <span class="quote-line">"The smallest act of kindness is worth more than the grandest intention."</span>
+      <span class="quote-line">"Saving one animal may not change the world, but it will change the world for that animal."</span>
+      <span class="quote-line">"Be the reason someone wags their tail today."</span>
+      <span class="quote-line">"Hope begins with a helping hand."</span>
+      <span class="quote-line">"Together, we can turn pain into love and loneliness into belonging."</span>
+      <span class="quote-line">"Every animal deserves a chance to feel safe, loved, and wanted."</span>
+      <span class="quote-line">"Your compassion is their rescue."</span>
+      <span class="quote-line">"A rescued animal is a rescued heart."</span>
+      <span class="quote-line">"Let your kindness ripple through every life you touch."</span>
+
+      <span class="highlight">You are the difference. You are the hope. Thank you for being a hero for the voiceless.</span>
+    </div>
+
+    <div id="welcomeBox" class="notice" style="display:none;"></div>
+  </div>
+</section>
+
+<!-- VIEW ANIMALS -->
+<section id="view">
+  <div class="container">
+  <h2>View all Animals</h2>
+  <table id="animalTable">
+    <thead><tr><th>ID</th><th>Type</th><th>Breed</th><th>Color</th><th>Health</th><th>Location</th><th>Status</th></tr></thead>
+    <tbody></tbody>
+  </table>
+  </div>
+</section>
+
+<!-- ADOPT -->
+<section id="adopt">
+  <div class="container">
+  <h2>Adoption Request</h2>
+  <form id="adoptForm" onsubmit="submitAdopt(event)">
+    <input type="text" id="adoptName" placeholder="Your Name" required>
+    <input type="text" id="adoptAnimal" placeholder="Animal ID or Type" required>
+    <textarea id="adoptReason" placeholder="Why do you want to adopt?" required></textarea>
+    <button type="submit">Submit Adoption Request</button>
+  </form>
+  </div>
+</section>
+
+<!-- REPORT (Volunteer) -->
+<section id="report" style="display:none;">
+  <div class="container">
+    <h2>Report a Stray</h2>
+    <p style="text-align:center; color:#000;">If you find a stray that needs help, please report details below.</p>
+    <form id="reportForm" onsubmit="submitReport(event)">
+      <input type="text" id="reporterName" placeholder="Your Name" required>
+      <input type="text" id="reportName" placeholder="Animal Name (optional)">
+      <input type="text" id="reportType" placeholder="Type (Dog / Cat / Other)" required>
+      <input type="text" id="reportLocation" placeholder="Location" required>
+      <textarea id="reportDesc" placeholder="Description / Condition" required></textarea>
+      <button type="submit">Submit Report</button>
+    </form>
+  </div>
+</section>
+
+<!-- REQUESTS (Admin only) -->
+<section id="requests" style="display:none;">
+  <div class="container">
+  <h2>Adoption Requests</h2>
+  <div id="requestsList" style="max-width:1000px; margin:0 auto;"></div>
+
+  <!-- Clear Requests button (admin only) -->
+  <div style="text-align:center; margin-top:12px;">
+    <button id="clearRequestsBtn" class="clear-btn" style="display:none;" onclick="clearRequests()">Clear All Requests</button>
+  </div>
+  </div>
+</section>
+
+<!-- CONTACT (Combined: volunteer-only form + admin notifications view) -->
+<section id="contact">
+  <div class="container">
+  <h2>Contact</h2>
+  <p style="text-align:center;">Phone: <strong>94568-75846</strong> | Email: <strong>strayanimals@gmail.com</strong></p>
+
+  <!-- VOLUNTEER CONTACT FORM: only shown to volunteers (JS controls display) -->
+  <form id="volunteerContactForm" onsubmit="submitVolunteerContact(event)" style="max-width:600px; margin:18px auto; display:none;">
+    <input type="text" id="contactName" placeholder="Your Name" required>
+    <input type="email" id="contactEmail" placeholder="Your Email" required>
+    <input type="text" id="contactPhone" placeholder="Phone (optional)">
+    <textarea id="contactMsg" placeholder="Type any message, suggestion, or request here..." required></textarea>
+    <button type="submit">Send Message</button>
+  </form>
+
+  <!-- ADMIN: view volunteer contact notifications -->
+  <div id="adminNotifications" style="max-width:900px; margin:10px auto;"></div>
+
+  <div style="text-align:center; margin-top:12px;">
+    <button id="clearContactBtn" class="clear-btn" style="display:none;" onclick="clearVolunteerNotifications()">Clear All Volunteer Messages</button>
+  </div>
+  </div>
+</section>
+
+<!-- ADMIN DASHBOARD -->
+<section id="dashboard">
+  <div class="container">
+  <h2>Admin Dashboard</h2>
+  <div style="text-align:center; margin-bottom:12px;">
+    <button onclick="showSection('manageAnimals')">Manage Animals</button>
+    <button onclick="showSection('manageReports')">Manage Reports</button>
+  </div>
+  <div id="adminSummary" class="notice" style="max-width:900px;"></div>
+
+  <h3 style="text-align:center; margin-top:20px;">Notifications</h3>
+  <div id="notifList" style="max-width:1000px; margin:0 auto;"></div>
+  </div>
+</section>
+
+<!-- MANAGE ANIMALS -->
+<section id="manageAnimals">
+  <div class="container">
+  <h2>Manage Animals</h2>
+  <form id="animalForm" onsubmit="addOrUpdateAnimal(event)">
+    <input type="hidden" id="animalId">
+    <input type="text" id="animalType" placeholder="Type" required>
+    <input type="text" id="animalBreed" placeholder="Breed" required>
+    <input type="text" id="animalColor" placeholder="Color" required>
+    <input type="text" id="animalHealth" placeholder="Health" required>
+    <input type="text" id="animalLocation" placeholder="Location" required>
+    <input type="text" id="animalStatus" placeholder="Status" required>
+    <button type="submit">Add / Update Animal</button>
+  </form>
+
+  <table id="manageAnimalTable">
+    <thead><tr><th>ID</th><th>Type</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody></tbody>
+  </table>
+  </div>
+</section>
+
+<!-- MANAGE REPORTS (Admin) -->
+<section id="manageReports" style="display:none;">
+  <div class="container">
+    <h2>Manage Reports</h2>
+    <div class="notice" style="max-width:900px; margin-bottom:12px;">Admins can approve, decline, or delete incoming reports.</div>
+    <table id="reportTable">
+      <thead>
+        <tr><th>ID</th><th>Reporter</th><th>Name</th><th>Type</th><th>Location</th><th>Description</th><th>Status</th><th>Actions</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
+<div class="footer">Made by the Animal Rescue Team</div>
+
+<script>
+/* ---------- Data stores (localStorage) ---------- */
+let users = JSON.parse(localStorage.getItem('users')) || [
+  { name: 'Administrator', username: 'admin', password: '12345', role: 'admin', email: 'admin@example.com' },
+  { name: 'Volunteer One', username: 'vol1', password: 'vol123', role: 'volunteer', email: 'vol1@example.com' }
+];
+let animals = JSON.parse(localStorage.getItem('animals')) || [];
+let reports = JSON.parse(localStorage.getItem('reports')) || [];
+let notifications = JSON.parse(localStorage.getItem('notifications')) || []; // adoption requests + volunteer_contact messages
+let currentUser = JSON.parse(sessionStorage.getItem('currentUser')) || null;
+
+/* Seed animals if empty */
+if(animals.length === 0){
+  const breeds=['Labrador','Persian','Bulldog','Siamese','Beagle','German Shepherd'];
+  const colors=['Brown','White','Black','Golden','Grey'];
+  const healths=['Healthy','Injured','Sick'];
+  const locations=['Mumbai','Pune','Delhi','Chennai','Bangalore'];
+  const statuses=['Adopted','Rescued','Reported','Under Treatment'];
+  for(let i=1;i<=10;i++){
+    animals.push({
+      id:i,
+      type:i%2===0?'Cat':'Dog',
+      breed:breeds[Math.floor(Math.random()*breeds.length)],
+      color:colors[Math.floor(Math.random()*colors.length)],
+      health:healths[Math.floor(Math.random()*healths.length)],
+      location:locations[Math.floor(Math.random()*locations.length)],
+      status:statuses[Math.floor(Math.random()*statuses.length)]
+    });
+  }
+  localStorage.setItem('animals', JSON.stringify(animals));
+}
+
+/* Persist helper */
+function persistAll(){
+  localStorage.setItem('users', JSON.stringify(users));
+  localStorage.setItem('animals', JSON.stringify(animals));
+  localStorage.setItem('reports', JSON.stringify(reports));
+  localStorage.setItem('notifications', JSON.stringify(notifications));
+}
+
+/* ---------- UI helpers ---------- */
+function updateRequestBadge(){
+  const reqNav = document.getElementById('reqCount');
+  if(!currentUser || currentUser.role !== 'admin'){
+    if(reqNav) reqNav.style.display = 'none';
+    return;
+  }
+  const count = notifications.filter(n => n.type === 'adoption_request').length;
+  if(count > 0){
+    reqNav.style.display = 'inline-block';
+    reqNav.textContent = count;
+  } else {
+    reqNav.style.display = 'none';
+  }
+}
+
+/* show/hide sections */
+function showSection(id){
+  document.querySelectorAll('section').forEach(s => s.style.display = s.id === id ? 'block' : 'none');
+  // run loads for specific views
+  if(id === 'view') loadAnimals();
+  if(id === 'manageAnimals') loadManageAnimals();
+  if(id === 'manageReports') loadManageReports();
+  if(id === 'contact') { configureContactView(); }
+  if(id === 'requests') loadRequestsForAdmin();
+  if(id === 'dashboard') {
+    loadNotifications();
+    loadAdminVolunteerNotifications();
+  }
+}
+
+/* placeholders */
+function updateLoginField(){
+  const role=document.getElementById('loginRole').value;
+  document.getElementById('loginUsername').placeholder = role === 'admin' ? 'Admin ID' : 'Username';
+}
+function updateSignupField(){
+  const role=document.getElementById('signupRole').value;
+  document.getElementById('signupUsername').placeholder = role === 'admin' ? 'Admin ID' : 'Username';
+}
+function updateForgetPlaceholder(){
+  const role=document.getElementById('forgetRole').value;
+  document.getElementById('forgetUsername').placeholder = role === 'admin' ? 'Admin ID' : 'Username';
+}
+
+/* ---------- Auth: signup/login/logout/forget ---------- */
+function signup(e){
+  e.preventDefault();
+  const name = document.getElementById('signupName').value.trim();
+  const username = document.getElementById('signupUsername').value.trim();
+  const password = document.getElementById('signupPassword').value;
+  const role = document.getElementById('signupRole').value;
+  if(users.find(u => u.username.toLowerCase() === username.toLowerCase() && u.role === role)){
+    alert('Account already exists with that username/role.');
+    return;
+  }
+  users.push({ name, username, password, role, email: '' });
+  persistAll();
+  alert('Account created successfully. Please login.');
+  document.getElementById('signupForm').reset();
+  // prefill login
+  document.getElementById('loginUsername').value = username;
+  document.getElementById('loginRole').value = role;
+  updateLoginField();
+  showSection('login');
+}
+
+function forgetPassword(e){
+  e.preventDefault();
+  const username = document.getElementById('forgetUsername').value.trim();
+  const role = document.getElementById('forgetRole').value;
+  const newPassword = document.getElementById('forgetNewPassword').value;
+  const idx = users.findIndex(u => u.username.toLowerCase() === username.toLowerCase() && u.role === role);
+  if(idx === -1){
+    alert('No account found with given username/role.');
+    return;
+  }
+  users[idx].password = newPassword;
+  persistAll();
+  alert('Password reset successful. Please login with new password.');
+  document.getElementById('forgetForm').reset();
+  showSection('login');
+}
+
+function login(e){
+  e.preventDefault();
+  const username = document.getElementById('loginUsername').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const role = document.getElementById('loginRole').value;
+  const user = users.find(u => u.username.toLowerCase() === username.toLowerCase() && u.role === role && u.password === password);
+  if(!user){ alert('Invalid credentials.'); return; }
+  currentUser = user;
+  sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+  // show nav and role specific items
+  document.getElementById('mainNav').style.display = 'flex';
+  document.getElementById('dashboardNav').style.display = currentUser.role === 'admin' ? 'inline' : 'none';
+  document.getElementById('adoptNav').style.display = currentUser.role === 'volunteer' ? 'inline' : 'none';
+  document.getElementById('reportNav').style.display = currentUser.role === 'volunteer' ? 'inline' : 'none';
+  document.getElementById('contactNav').style.display = 'inline';
+  document.getElementById('requestsNav').style.display = currentUser.role === 'admin' ? 'inline' : 'none';
+  const crBtn = document.getElementById('clearRequestsBtn');
+  if(crBtn) crBtn.style.display = currentUser.role === 'admin' ? 'inline-block' : 'none';
+  document.getElementById('clearContactBtn').style.display = currentUser.role === 'admin' ? 'block' : 'none';
+
+  // welcome: inspiring short message
+  const wb = document.getElementById('welcomeBox');
+  if(wb){ wb.style.display = 'block'; wb.textContent = 'Thank you for making a difference.'; }
+  updateRequestBadge();
+  showSection('home');
+}
+
+function logout(){
+  currentUser = null;
+  sessionStorage.removeItem('currentUser');
+  document.getElementById('mainNav').style.display = 'none';
+  showSection('login');
+}
+
+/* ---------- Animals ---------- */
+function loadAnimals(){
+  const tbody = document.querySelector('#animalTable tbody');
+  tbody.innerHTML = '';
+  animals.forEach(a => {
+    tbody.insertAdjacentHTML('beforeend', `<tr>
+      <td>${a.id}</td><td>${escapeHtml(a.type)}</td><td>${escapeHtml(a.breed)}</td>
+      <td>${escapeHtml(a.color)}</td><td>${escapeHtml(a.health)}</td><td>${escapeHtml(a.location)}</td><td>${escapeHtml(a.status)}</td>
+    </tr>`);
+  });
+}
+
+function loadManageAnimals(){
+  const tbody = document.querySelector('#manageAnimalTable tbody');
+  tbody.innerHTML = '';
+  animals.forEach(a => {
+    tbody.insertAdjacentHTML('beforeend', `<tr>
+      <td>${a.id}</td><td>${escapeHtml(a.type)}</td><td>${escapeHtml(a.status)}</td>
+      <td>
+        <button class="small-btn" onclick="editAnimal(${a.id})">Edit</button>
+        <button class="small-btn" onclick="deleteAnimal(${a.id})">Delete</button>
+      </td>
+    </tr>`);
+  });
+}
+
+function addOrUpdateAnimal(e){
+  e.preventDefault();
+  const idVal = document.getElementById('animalId').value;
+  const newAnimal = {
+    id: idVal ? parseInt(idVal) : (animals.length ? (Math.max(...animals.map(x=>x.id))+1) : 1),
+    type: document.getElementById('animalType').value,
+    breed: document.getElementById('animalBreed').value,
+    color: document.getElementById('animalColor').value,
+    health: document.getElementById('animalHealth').value,
+    location: document.getElementById('animalLocation').value,
+    status: document.getElementById('animalStatus').value
+  };
+  if(idVal){
+    const idx = animals.findIndex(a => a.id == idVal);
+    animals[idx] = newAnimal;
+  } else {
+    animals.push(newAnimal);
+  }
+  persistAll();
+  loadManageAnimals();
+  e.target.reset();
+  alert('Animal saved.');
+}
+
+function editAnimal(id){
+  const a = animals.find(x => x.id == id);
+  if(!a) return;
+  document.getElementById('animalId').value = a.id;
+  document.getElementById('animalType').value = a.type;
+  document.getElementById('animalBreed').value = a.breed;
+  document.getElementById('animalColor').value = a.color;
+  document.getElementById('animalHealth').value = a.health;
+  document.getElementById('animalLocation').value = a.location;
+  document.getElementById('animalStatus').value = a.status;
+  showSection('manageAnimals');
+}
+
+function deleteAnimal(id){
+  if(!confirm('Delete this animal?')) return;
+  animals = animals.filter(a => a.id !== id);
+  persistAll();
+  loadManageAnimals();
+}
+
+/* ---------- Reports ---------- */
+function submitReport(e){
+  e.preventDefault();
+  const reporter = document.getElementById('reporterName').value.trim();
+  const name = document.getElementById('reportName').value.trim();
+  const type = document.getElementById('reportType').value.trim();
+  const location = document.getElementById('reportLocation').value.trim();
+  const desc = document.getElementById('reportDesc').value.trim();
+  const newReport = { id: reports.length ? Math.max(...reports.map(r=>r.id))+1 : 1, reporter, name, type, location, desc, status: 'Submitted' };
+  reports.push(newReport);
+  persistAll();
+  alert('Report submitted successfully!');
+  const rf = document.getElementById('reportForm');
+  if(rf) rf.reset();
+}
+
+/* Admin manage reports */
+function loadManageReports(){
+  const tbody = document.querySelector('#reportTable tbody');
+  tbody.innerHTML = '';
+  reports.forEach(r => {
+    tbody.insertAdjacentHTML('beforeend', `<tr>
+      <td>${r.id}</td>
+      <td>${escapeHtml(r.reporter)}</td>
+      <td>${escapeHtml(r.name)}</td>
+      <td>${escapeHtml(r.type)}</td>
+      <td>${escapeHtml(r.location)}</td>
+      <td>${escapeHtml(r.desc)}</td>
+      <td>${escapeHtml(r.status)}</td>
+      <td>
+        <button class="small-btn" onclick="updateReportStatus(${r.id},'Approved')">Approve</button>
+        <button class="small-btn" onclick="updateReportStatus(${r.id},'Declined')">Decline</button>
+        <button class="small-btn" onclick="deleteReport(${r.id})">Delete</button>
+      </td>
+    </tr>`);
+  });
+}
+
+function deleteReport(id){
+  if(!confirm('Delete this report?')) return;
+  reports = reports.filter(r => r.id !== id);
+  persistAll();
+  loadManageReports();
+  alert('Report deleted.');
+}
+
+function updateReportStatus(id, status){
+  const r = reports.find(x => x.id == id);
+  if(r){ r.status = status; persistAll(); loadManageReports(); }
+}
+
+/* ---------- Adoption requests (notifications) ---------- */
+function submitAdopt(e){
+  e.preventDefault();
+  const name = document.getElementById('adoptName').value.trim();
+  const animal = document.getElementById('adoptAnimal').value.trim();
+  const reason = document.getElementById('adoptReason').value.trim();
+  const req = {
+    id: notifications.length ? Math.max(...notifications.map(n=>n.id))+1 : 1,
+    type: 'adoption_request',
+    from: name,
+    animal: animal,
+    reason: reason,
+    created_at: new Date().toISOString(),
+    status: 'Pending'
+  };
+  notifications.push(req);
+  persistAll();
+  updateRequestBadge();
+  alert('Adoption request submitted successfully!');
+  document.getElementById('adoptForm').reset();
+}
+
+/* Show notifications (mix of contacts + adoption requests) */
+function loadNotifications(){
+  // admin view (notifList)
+  if(!currentUser || currentUser.role !== 'admin') return;
+  const div = document.getElementById('notifList');
+  if(!div) return;
+  div.innerHTML = '';
+  if(!notifications || notifications.length === 0){
+    div.innerHTML = '<div class="notice">No notifications yet.</div>';
+    return;
+  }
+  // render latest notifications (limit 50)
+  notifications.slice(-50).reverse().forEach(n => {
+    let html = '<div class="notice" style="text-align:left;">';
+    if(n.type === 'adoption_request'){
+      html += `<strong>Adoption request</strong><br>`;
+      html += `From: ${escapeHtml(n.from)}<br>Animal: ${escapeHtml(n.animal)}<br>Reason: ${escapeHtml(n.reason)}<br>At: ${escapeHtml(new Date(n.created_at).toLocaleString())}<br>Status: ${escapeHtml(n.status)}<br>`;
+    } else if(n.type === 'volunteer_contact'){
+      html += `<strong>Volunteer message</strong><br>`;
+      html += `From: ${escapeHtml(n.from)} (${escapeHtml(n.email)}${n.phone? ' | '+escapeHtml(n.phone):''})<br>`;
+      html += `Message: ${escapeHtml(n.message)}<br>At: ${escapeHtml(new Date(n.created_at).toLocaleString())}<br>`;
+    } else {
+      html += `<div style="white-space:pre-wrap;">${escapeHtml(JSON.stringify(n))}</div>`;
+    }
+    html += `<div style="margin-top:8px;">`;
+    if(n.type === 'adoption_request'){
+      html += `<button class="small-btn" onclick="approveRequest(${n.id})">Approve</button>`;
+      html += `<button class="small-btn" onclick="declineRequest(${n.id})">Decline</button>`;
+    }
+    html += `<button class="small-btn" onclick="removeNotification(${n.id})">Remove</button>`;
+    html += `</div></div>`;
+    div.insertAdjacentHTML('beforeend', html);
+  });
+}
+
+/* Admin remove notification */
+function removeNotification(id){
+  if(!currentUser || currentUser.role !== 'admin'){ alert('Only admins can remove notifications.'); return; }
+  if(!confirm('Remove this notification?')) return;
+  notifications = notifications.filter(n => n.id !== id);
+  persistAll();
+  updateRequestBadge();
+  loadNotifications();
+  loadAdminVolunteerNotifications();
+}
+
+/* Approve/Decline adoption */
+function approveRequest(id){
+  const idx = notifications.findIndex(n => n.id === id && n.type === 'adoption_request');
+  if(idx === -1) return alert('Request not found');
+  const req = notifications[idx];
+  // try to find animal by id or breed
+  let found = null;
+  const asId = Number(req.animal);
+  if(!isNaN(asId)) found = animals.find(a => a.id === asId);
+  if(!found) found = animals.find(a => (a.breed && a.breed.toLowerCase() === String(req.animal).toLowerCase()) || String(a.id) === String(req.animal));
+  if(found){
+    found.status = 'Adopted';
+    persistAll();
+  }
+  // update status and keep record
+  req.status = 'Approved';
+  persistAll();
+  updateRequestBadge();
+  loadNotifications();
+  loadRequestsForAdmin();
+  alert('Request approved. If a matching animal was found its status was updated.');
+}
+
+function declineRequest(id){
+  const idx = notifications.findIndex(n => n.id === id && n.type === 'adoption_request');
+  if(idx === -1) return alert('Request not found');
+  notifications[idx].status = 'Declined';
+  persistAll();
+  loadNotifications();
+  loadRequestsForAdmin();
+  alert('Request declined.');
+}
+
+/* Admin view & manage requests */
+function loadRequestsForAdmin(){
+  const container = document.getElementById('requestsList');
+  container.innerHTML = '';
+  const reqs = notifications.filter(n => n.type === 'adoption_request');
+  if(reqs.length === 0){
+    container.innerHTML = '<div class="notice">No adoption requests.</div>';
+    return;
+  }
+  reqs.slice().reverse().forEach(n => {
+    let html = '<div class="notice" id="req-' + n.id + '" style="text-align:left;">';
+    html += '<strong>From:</strong> ' + escapeHtml(n.from) + ' <br>';
+    html += '<strong>Animal:</strong> ' + escapeHtml(n.animal) + ' <br>';
+    html += '<strong>Reason:</strong> ' + escapeHtml(n.reason) + ' <br>';
+    html += '<strong>Requested At:</strong> ' + new Date(n.created_at).toLocaleString() + ' <br>';
+    html += '<strong>Status:</strong> ' + escapeHtml(n.status || '') + ' <br>';
+    html += '<div style="margin-top:8px;">' +
+            '<button class="small-btn" onclick="approveRequest(' + n.id + ')">Approve</button>' +
+            '<button class="small-btn" onclick="declineRequest(' + n.id + ')">Decline</button>' +
+            '<button class="small-btn" onclick="removeNotification(' + n.id + ')">Remove</button>' +
+            '</div></div>';
+    container.insertAdjacentHTML('beforeend', html);
+  });
+}
+
+/* Clear all adoption requests (keep other notifications) */
+function clearRequests(){
+  if(!confirm('Clear ALL adoption requests? This cannot be undone.')) return;
+  notifications = notifications.filter(n => n.type !== 'adoption_request');
+  persistAll();
+  updateRequestBadge();
+  loadRequestsForAdmin();
+  alert('All adoption requests cleared.');
+}
+
+/* ---------- Volunteer Contact -> save as notification ---------- */
+function submitVolunteerContact(e){
+  e.preventDefault();
+  const name = document.getElementById('contactName').value.trim();
+  const email = document.getElementById('contactEmail').value.trim();
+  const phone = document.getElementById('contactPhone').value.trim();
+  const msg = document.getElementById('contactMsg').value.trim();
+  const note = {
+    id: notifications.length ? Math.max(...notifications.map(n=>n.id))+1 : 1,
+    type: 'volunteer_contact',
+    from: name,
+    email: email,
+    phone: phone,
+    message: msg,
+    created_at: new Date().toISOString()
+  };
+  notifications.push(note);
+  persistAll();
+  alert('Message sent! Admin will see your message in Notifications.');
+  document.getElementById('volunteerContactForm').reset();
+  // if admin is viewing dashboard/notifications, reload
+  loadAdminVolunteerNotifications();
+  updateRequestBadge();
+}
+
+/* ADMIN: load volunteer contact messages into adminNotifications block */
+function loadAdminVolunteerNotifications(){
+  const div = document.getElementById('adminNotifications');
+  if(!div) return;
+  // show only for admins
+  if(!currentUser || currentUser.role !== 'admin'){
+    div.innerHTML = '<div class="notice">Volunteer contact form is only for volunteers. Admins see messages in Notifications/dashboard.</div>';
+    return;
+  }
+  const vols = notifications.filter(n => n.type === 'volunteer_contact');
+  if(vols.length === 0){
+    div.innerHTML = '<div class="notice">No messages from volunteers.</div>';
+    return;
+  }
+  div.innerHTML = '';
+  vols.slice().reverse().forEach(c => {
+    let html = `<div class="notice" style="text-align:left;">
+      <strong>${escapeHtml(c.from)}</strong> (${escapeHtml(c.email)}${c.phone? ' | '+escapeHtml(c.phone):''})<br>
+      ${escapeHtml(c.message)}<br><small>${escapeHtml(new Date(c.created_at).toLocaleString())}</small><div style="margin-top:8px;">
+      <button class="small-btn" onclick="removeNotification(${c.id})">Remove</button>
+      </div></div>`;
+    div.insertAdjacentHTML('beforeend', html);
+  });
+}
+
+/* Clear only volunteer messages */
+function clearVolunteerNotifications(){
+  if(!confirm('Clear ALL volunteer messages?')) return;
+  notifications = notifications.filter(n => n.type !== 'volunteer_contact');
+  persistAll();
+  loadAdminVolunteerNotifications();
+  loadNotifications();
+  alert('All volunteer messages cleared.');
+}
+
+/* ---------- Notifications view already handled by loadNotifications() ---------- */
+
+/* ---------- Contacts (deprecated) ---------- */
+/* NOTE: We removed admin contact form storage. Volunteer messages are now stored in notifications[] as type 'volunteer_contact'.
+   Old contacts[] array removed from admin workflow to match your request. */
+
+/* ---------- Utilities ---------- */
+function escapeHtml(s){ if(s === null || s === undefined) return ''; return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ---------- Init on load ---------- */
+window.addEventListener('DOMContentLoaded', () => {
+  // restore currentUser from session if available
+  const cur = JSON.parse(sessionStorage.getItem('currentUser') || 'null');
+  if(cur){
+    currentUser = cur;
+    document.getElementById('mainNav').style.display = 'flex';
+    document.getElementById('dashboardNav').style.display = currentUser.role === 'admin' ? 'inline' : 'none';
+    document.getElementById('adoptNav').style.display = currentUser.role === 'volunteer' ? 'inline' : 'none';
+    document.getElementById('reportNav').style.display = currentUser.role === 'volunteer' ? 'inline' : 'none';
+    document.getElementById('contactNav').style.display = 'inline';
+    document.getElementById('requestsNav').style.display = currentUser.role === 'admin' ? 'inline' : 'none';
+    document.getElementById('clearContactBtn').style.display = currentUser.role === 'admin' ? 'block' : 'none';
+    const crBtn = document.getElementById('clearRequestsBtn');
+    if(crBtn) crBtn.style.display = currentUser.role === 'admin' ? 'inline-block' : 'none';
+    const wb = document.getElementById('welcomeBox'); wb.style.display='block'; wb.textContent = 'Every small act of kindness helps. Rescue, care, and give hope.';
+    showSection('home');
+  } else {
+    showSection('login');
+  }
+  updateRequestBadge();
+  loadAnimals();
+  loadManageAnimals();
+  loadManageReports();
+  // ensure notifications blocks are populated if admin is logged in
+  loadNotifications();
+  loadAdminVolunteerNotifications();
+});
+
+/* Ensure contact view shows form only to volunteers */
+function configureContactView(){
+  const form = document.getElementById('volunteerContactForm');
+  const clearBtn = document.getElementById('clearContactBtn');
+  if(currentUser && currentUser.role === 'volunteer'){
+    if(form) form.style.display = 'block';
+    if(clearBtn) clearBtn.style.display = 'none';
+    // adminNotifications should be hidden for volunteers (but we can show summary)
+    document.getElementById('adminNotifications').innerHTML = '<div class="notice">Thank you for your willingness to help. Use the form to message admins.</div>';
+  } else if(currentUser && currentUser.role === 'admin'){
+    if(form) form.style.display = 'none';
+    if(clearBtn) clearBtn.style.display = 'block';
+    // load admin view of volunteer messages
+    loadAdminVolunteerNotifications();
+  } else {
+    // not logged in - hide form (ask to login)
+    if(form) form.style.display = 'none';
+    if(clearBtn) clearBtn.style.display = 'none';
+    document.getElementById('adminNotifications').innerHTML = '<div class="notice">Please login as Volunteer to send messages, or as Admin to view messages.</div>';
+  }
+}
+</script>
+</body>
+</html>

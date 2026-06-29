@@ -1,0 +1,14 @@
+[
+  {
+    "name": "Admin User",
+    "email": "admin@stray.com",
+    "password": "admin123",
+    "role": "admin"
+  },
+  {
+    "name": "Volunteer User",
+    "email": "vol@stray.com",
+    "password": "vol123",
+    "role": "volunteer"
+  }
+]

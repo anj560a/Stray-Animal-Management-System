@@ -1,0 +1,17 @@
+{
+  "users": [
+    {
+      "name": "Admin",
+      "email": "admin@stray.com",
+      "password": "admin123",
+      "role": "admin"
+    },
+    {
+      "name": "Volunteer",
+      "email": "volunteer@stray.com",
+      "password": "vol123",
+      "role": "volunteer"
+    }
+  ],
+  "animals": []
+}

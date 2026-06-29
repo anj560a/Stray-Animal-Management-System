@@ -1,0 +1,5 @@
+[
+  { "id": 1, "type": "Dog", "breed": "Rottweiler", "location": "Mumbai", "status": "Rescued" },
+  { "id": 2, "type": "Cat", "breed": "Persian", "location": "Delhi", "status": "Adopted" },
+  { "id": 3, "type": "Cow", "breed": "Desi", "location": "Pune", "status": "Healthy" }
+]
